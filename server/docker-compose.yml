@@ -1,0 +1,78 @@
+# **************************************************************************** #
+#                                                                              #
+#                                                         :::      ::::::::    #
+#    docker-compose.yml                                 :+:      :+:    :+:    #
+#                                                     +:+ +:+         +:+      #
+#    By: jijeong <jijeong@student.42seoul.kr>       +#+  +:+       +#+         #
+#                                                 +#+#+#+#+#+   +#+            #
+#    Created: 2026/05/12 22:45:09 by jijeong           #+#    #+#              #
+#    Updated: 2026/05/12 22:45:11 by jijeong          ###   ########.fr        #
+#                                                                              #
+# **************************************************************************** #
+
+# 예시입니다.
+services:
+    mariadb:
+        image: mariadb
+        container_name: mariadb
+        build: ./requirements/mariadb
+        restart: always
+        expose:
+            - "3306"
+        volumes:
+            - db_volume:/var/lib/mysql
+        networks:
+            - intra
+        env_file:
+            - .env
+    nginx:
+        image: nginx
+        container_name: nginx
+        build: ./requirements/nginx
+        depends_on:
+            - was
+        restart: always
+        ports:
+            - "443:443"
+        volumes:
+            - was_volume:/var/www/html
+        networks:
+            - intra
+        env_file:
+            - .env
+
+    was:
+        image: was
+        container_name: was
+        build: ./requirements/was
+        depends_on:
+            - mariadb
+        restart: always
+        volumes:
+            - was_volume:/var/www/html
+        expose: 
+            - "9000"
+        networks:
+            - intra
+        env_file:
+            - .env
+
+networks:
+    intra:
+        driver: bridge
+
+volumes:
+    db_volume:
+        name: db_volume
+        driver: local
+        driver_opts:
+            type: none
+            device: /home/jijeong/volume/db
+            o: bind
+    was_volume:
+        name: was_volume
+        driver: local
+        driver_opts:
+            type: none
+            device: /home/jijeong/volume/was
+            o: bind
