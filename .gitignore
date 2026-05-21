@@ -1,1 +1,64 @@
-./temp/secret.md
+# --- Environment & Secrets ---
+.env
+.env.local
+.env.*.local
+*.secret
+temp/
+
+# --- Operating System ---
+.DS_Store
+Thumbs.db
+*.swp
+
+# --- IDEs ---
+.vscode/
+.idea/
+*.suo
+*.user
+*.sln.docstates
+.vs/
+
+# --- Infrastructure & DB ---
+infra/mariadb/data/
+*.log
+
+# --- Node.js (web-frontend) ---
+services/web-frontend/node_modules/
+services/web-frontend/dist/
+services/web-frontend/.next/
+services/web-frontend/out/
+services/web-frontend/build/
+services/web-frontend/.npm
+services/web-frontend/npm-debug.log*
+services/web-frontend/yarn-error.log*
+
+# --- Python (analysis-api) ---
+services/analysis-api/__pycache__/
+services/analysis-api/*.py[cod]
+services/analysis-api/*$py.class
+services/analysis-api/.venv/
+services/analysis-api/venv/
+services/analysis-api/env/
+services/analysis-api/.pytest_cache/
+services/analysis-api/.coverage
+services/analysis-api/htmlcov/
+
+# --- Spring Boot / Kotlin (auth-api) ---
+services/auth-api/build/
+services/auth-api/out/
+services/auth-api/.gradle/
+services/auth-api/bin/
+services/auth-api/*.jar
+services/auth-api/*.war
+
+# --- .NET (win-app-api) ---
+services/win-app-api/bin/
+services/win-app-api/obj/
+services/win-app-api/TestResults/
+services/win-app-api/*.userprefs
+services/win-app-api/*.vspscc
+services/win-app-api/Generated\ Files/
+services/win-app-api/_ReSharper*/
+
+# --- Docker ---
+.docker/
