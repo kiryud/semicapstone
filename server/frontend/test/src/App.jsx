@@ -22,8 +22,10 @@ ChartJS.register(
 )
 
 function Home() {
-  const [months, setMonths] = useState([])
-  const [visitors, setVisitors] = useState([])
+  const [labels, setLabels] = useState(null)
+  const [units, setUnits] = useState(null)
+  const [values, setValues] = useState(null)
+  const [chartData, setChartData] = useState(null);
   const [loading, setLoading] = useState(true)
   const navigate = useNavigate()
 
@@ -33,8 +35,46 @@ function Home() {
         const response = await fetch('http://localhost:5026/api/dashboard')
         if (response.ok) {
           const data = await response.json()
-          setMonths(data.chartLabels)
-          setVisitors(data.chartValues)
+          setLabels(data.chartFieldLabels)
+          setUnits(data.chartFieldUnits)
+          setValues(data.chartValues.data)
+
+          const rawLabels = data.chartFieldLabels
+          const rawUnits = data.chartFieldUnits
+          const rawValues = data.chartValues.data
+
+          const targetFields = rawLabels.filter(field => {
+            const val = rawValues[field]
+            return typeof val === 'number' && val >= 0 && val <= 100
+          })
+
+          const dynamicLabels = targetFields.map(field => {
+            const unit = rawUnits[field]
+            return unit ? `${field} (${unit})` : field
+          })
+
+          const dynamicValues = targetFields.map(field => rawValues[field])
+
+          setChartData({
+          labels: dynamicLabels,
+          datasets: [
+            {
+              label: '장비 상태 (0~100 스케일 그룹)',
+              data: dynamicValues,
+              backgroundColor: [
+                'rgba(255, 99, 132, 0.6)',   // 온도: 부드러운 빨간색
+                'rgba(54, 162, 235, 0.6)',   // 습도: 부드러운 파란색
+                'rgba(75, 192, 192, 0.6)'    // 팬 속도: 부드러운 민트색
+              ],
+              borderColor: [
+                'rgba(255, 99, 132, 1)',
+                'rgba(54, 162, 235, 1)',
+                'rgba(75, 192, 192, 1)'
+              ],
+              borderWidth: 1,
+            },
+          ],
+        });
         } else {
           alert('데이터를 가져오는데 실패했습니다.')
         }
@@ -52,31 +92,26 @@ function Home() {
     return <div style={{ textAlign: 'center', marginTop: '100px' }}><h2>데이터를 불러오는 중입니다...</h2></div>
   }
 
-  const chartData = {
-    labels: months, // X축 레이블
-    datasets: [
-      {
-        label: '월별 방문자 수',
-        data: visitors, // 실제 데이터 값
-        backgroundColor: 'rgba(75, 192, 192, 0.6)', // 바 색상
-        borderColor: 'rgba(75, 192, 192, 1)',
-        borderWidth: 1,
-      },
-    ],
-  }
-
-  const chartOptions = {
+  const options = {
     responsive: true,
     plugins: {
       legend: {
-        position: 'top', // 범례 위치
+        display: true,
+        position: 'top',
       },
       title: {
         display: true,
-        text: '상반기 통계 그래프', // 차트 제목
+        text: '장비 환경 변수 모니터링 (온도/습도/팬)',
+        font: { size: 16 }
       },
     },
-  }
+    scales: {
+      y: {
+        beginAtZero: true,
+        max: 100,
+      },
+    },
+  };
 
   return (
     <>
@@ -84,30 +119,65 @@ function Home() {
       <h1>메인 페이지</h1>
     </div>
 
-    <div style={{ width: '600px', margin: '0 auto', padding: '20px', background: '#fff', borderRadius: '8px' }}>
-      <Bar data={chartData} options={chartOptions} />
+    <div style={{ 
+      display: 'flex', 
+      flexDirection: 'row',
+      gap: '15px',
+      width: '100%',
+      flexWrap: 'wrap'}}>
+      <pre style={{
+          flex: 1,
+          backgroundColor: '#f4f4f4',
+          padding: '15px',
+          borderRadius: '5px',
+          overflowX: 'auto',
+          fontSize: '14px',
+          textAlign: 'left',
+          lineHeight: '1.5'
+        }}>
+          {/* null, 2를 넣어줘야 줄바꿈과 2칸 들여쓰기가 적용됩니다 */}
+          {JSON.stringify(labels, null, 2)}
+      </pre>
+
+      <pre style={{
+          flex: 1,
+          backgroundColor: '#f4f4f4',
+          padding: '15px',
+          borderRadius: '5px',
+          overflowX: 'auto',
+          fontSize: '14px',
+          textAlign: 'left',
+          lineHeight: '1.5'
+        }}>
+          {/* null, 2를 넣어줘야 줄바꿈과 2칸 들여쓰기가 적용됩니다 */}
+          {JSON.stringify(units, null, 2)}
+      </pre>
+
+      <pre style={{
+          flex: 1,
+          backgroundColor: '#f4f4f4',
+          padding: '15px',
+          borderRadius: '5px',
+          overflowX: 'auto',
+          fontSize: '14px',
+          textAlign: 'left',
+          lineHeight: '1.5'
+        }}>
+          {/* null, 2를 넣어줘야 줄바꿈과 2칸 들여쓰기가 적용됩니다 */}
+          {JSON.stringify(values, null, 2)}
+      </pre>
     </div>
 
-      <div style={{ width: '600px', margin: '30px auto', padding: '10px', background: '#fff', borderRadius: '8px' }}>
-        <h3 style={{ textAlign: 'center', color: '#333', marginBottom: '15px' }}>상세 데이터 목록</h3>
-        
-        <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'center' }}>
-          <thead>
-            <tr style={{ background: '#f4f4f4', borderBottom: '2px solid #ddd' }}>
-              <th style={{ padding: '10px', color: '#333' }}>월</th>
-              <th style={{ padding: '10px', color: '#333' }}>방문자 수 (명)</th>
-            </tr>
-          </thead>
-          <tbody>
-            {months.map((month, index) => (
-              <tr key={index} style={{ borderBottom: '1px solid #eee' }}>
-                <td style={{ padding: '10px', fontWeight: 'bold', color: '#555' }}>{month}</td>
-                <td style={{ padding: '10px', color: '#666' }}>{visitors[index]?.toLocaleString()}명</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+    <div style={{ 
+      width: '100%', 
+      margin: '20px 0', 
+      backgroundColor: '#ffffff', 
+      padding: '15px', 
+      borderRadius: '8px',
+      boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+    }}>
+      <Bar options={options} data={chartData} />
+    </div>
 
     <div>
       <button 
