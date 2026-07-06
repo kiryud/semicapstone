@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Routes, Route, useNavigate } from 'react-router-dom'
 import './App.css'
 import { Bar } from 'react-chartjs-2'
@@ -22,13 +22,38 @@ ChartJS.register(
 )
 
 function Home() {
+  const [months, setMonths] = useState([])
+  const [visitors, setVisitors] = useState([])
+  const [loading, setLoading] = useState(true)
   const navigate = useNavigate()
 
-  const months = ['1월', '2월', '3월', '4월', '5월', '6월']
-  const visitors = [120, 190, 300, 500, 240, 350]
+  useEffect(() => {
+    const fetchDashboardData = async () => {
+      try {
+        const response = await fetch('http://localhost:5026/api/dashboard')
+        if (response.ok) {
+          const data = await response.json()
+          setMonths(data.chartLabels)
+          setVisitors(data.chartValues)
+        } else {
+          alert('데이터를 가져오는데 실패했습니다.')
+        }
+      } catch (error) {
+        console.error(error)
+        alert('백엔드 서버 연결 상태를 확인해주세요!')
+      } finally {
+        setLoading(false)
+      }
+    }
+    fetchDashboardData()
+  }, [])
+
+  if (loading) {
+    return <div style={{ textAlign: 'center', marginTop: '100px' }}><h2>데이터를 불러오는 중입니다...</h2></div>
+  }
 
   const chartData = {
-    labels: ['1월', '2월', '3월', '4월', '5월', '6월'], // X축 레이블
+    labels: months, // X축 레이블
     datasets: [
       {
         label: '월별 방문자 수',
@@ -77,7 +102,7 @@ function Home() {
             {months.map((month, index) => (
               <tr key={index} style={{ borderBottom: '1px solid #eee' }}>
                 <td style={{ padding: '10px', fontWeight: 'bold', color: '#555' }}>{month}</td>
-                <td style={{ padding: '10px', color: '#666' }}>{visitors[index].toLocaleString()}명</td>
+                <td style={{ padding: '10px', color: '#666' }}>{visitors[index]?.toLocaleString()}명</td>
               </tr>
             ))}
           </tbody>
@@ -102,7 +127,7 @@ function Login() {
 
   const navigate = useNavigate()
 
-  const handleLogin = () => {
+  const handleLogin = async () => {
     setIsLogin(true)
 
     if (typeID === '' || typePW === '') {
@@ -112,10 +137,31 @@ function Login() {
     }
 
     alert(`여기서 서버로 api 요청해야함\nSuccess : 200\nFail : 400\nID: ${typeID}\nPW: ${typePW}`)
+    try {
+      const response = await fetch('http://localhost:5026/api/login', { 
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          id: typeID,
+          password: typePW
+        })
+      })
 
-    setTimeout(() => {
-      navigate('/home')
-    }, 5000)
+      const data = await response.json()
+
+      if (response.ok) {
+        alert(data.message) 
+        navigate('/home') // 홈으로 이동
+      } else {
+        alert(data.message) 
+        setIsLogin(false)
+      }
+    } catch (error) {
+      alert('C# 백엔드 서버가 꺼져있거나 주소가 잘못되었습니다!')
+      setIsLogin(false)
+    }
   }
 
   return (
