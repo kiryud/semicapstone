@@ -13,7 +13,7 @@
 #### 인터넷
 #### 인트라넷
 
-### 백엔드
+### 백엔드 (모놀리식 Monolithic)
 
 #### web server
 ##### httpd (apache)
