@@ -1,12 +1,14 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { Routes, Route, useNavigate } from 'react-router-dom'
 import './App.css'
 import { Bar } from 'react-chartjs-2'
+import { Doughnut } from 'react-chartjs-2'
 import {
   Chart as ChartJS,
   CategoryScale,
   LinearScale,
   BarElement,
+  ArcElement,
   Title,
   Tooltip,
   Legend,
@@ -16,6 +18,7 @@ ChartJS.register(
   CategoryScale,
   LinearScale,
   BarElement,
+  ArcElement,
   Title,
   Tooltip,
   Legend
@@ -26,8 +29,19 @@ function Home() {
   const [units, setUnits] = useState(null)
   const [values, setValues] = useState(null)
   const [chartData, setChartData] = useState(null);
+  const [chartHumilData, setChartHumilData] = useState(null);
   const [loading, setLoading] = useState(true)
   const navigate = useNavigate()
+
+  const barChartRef = useRef(null);
+  const doughnutChartRef = useRef(null);
+
+  useEffect(() => {
+    return () => {
+      if (barChartRef.current) barChartRef.current.destroy();
+      if (doughnutChartRef.current) doughnutChartRef.current.destroy();
+    };
+  }, []);
 
   useEffect(() => {
     const fetchDashboardData = async () => {
@@ -54,6 +68,24 @@ function Home() {
           })
 
           const dynamicValues = targetFields.map(field => rawValues[field])
+
+          const humidityValue = typeof rawValues.humidity === 'number' ? rawValues.humidity : 0;
+
+          setChartHumilData({
+            title: 'humidity',
+            value: humidityValue,
+            chartData: {
+              labels: ['습도'],
+              datasets: [
+                {
+                  data: [humidityValue, 100 - humidityValue], // 채워진 값 vs 남은 값
+                  backgroundColor: ['rgba(54, 162, 235, 0.6)', '#E0E0E0'], // 채움 컬러 vs 배경 회색
+                  borderWidth: 0,
+                  borderRadius: 8, // 게이지 끝부분 라운딩 처리
+                }
+              ]
+            }
+          });
 
           setChartData({
           labels: dynamicLabels,
@@ -112,6 +144,18 @@ function Home() {
       },
     },
   };
+
+  const options_d = {
+    responsive: true,
+    maintainAspectRatio: false,
+    rotation: -90,       // 왼쪽(-90도)에서 시작해서
+    circumference: 180,  // 반원(180도)만큼만 그림
+    cutout: '75%',       // 내부 도넛 구멍 크기 (속도계 두께)
+    plugins: {
+      legend: { display: false }, // 게이지 차트는 범례 필요 없음
+      tooltip: { enabled: false } // 툴팁 비활성화
+    }
+  }
 
   return (
     <>
@@ -176,7 +220,39 @@ function Home() {
       borderRadius: '8px',
       boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
     }}>
-      <Bar options={options} data={chartData} />
+      <Bar ref={barChartRef} options={options} data={chartData} />
+    </div>
+
+    {/* 2. 계기판(도넛) 차트 */}
+    <div style={{ 
+      width: '100%', 
+      margin: '20px 0', 
+      backgroundColor: '#ffffff', 
+      padding: '15px', 
+      borderRadius: '8px',
+      boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+      display: 'flex',
+      justifyContent: 'center'
+    }}>
+        <div style={{ position: 'relative', width: '300px', height: '180px', textAlign: 'center' }}>
+          <h3 style={{ margin: '0 0 10px 0', fontSize: '16px' }}>{chartHumilData.title}</h3>
+          
+          {/* ⚠️ 반드시 .chartData 까지 연결해줘야 합니다 */}
+          <Doughnut ref={doughnutChartRef} options={options_d} data={chartHumilData.chartData} />
+          
+          {/* 중앙 표시 텍스트 */}
+          <div style={{ 
+            position: 'absolute', 
+            top: '70%', 
+            left: '50%', 
+            transform: 'translate(-50%, -50%)',
+            fontSize: '1.8rem',
+            fontWeight: 'bold',
+            color: '#333'
+          }}>
+            {chartHumilData.value}%
+          </div>
+        </div>
     </div>
 
     <div>
