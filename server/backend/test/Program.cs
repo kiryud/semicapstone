@@ -1,4 +1,6 @@
-using System.Text.Json;
+using System.Data;
+using MySqlConnector;
+using Dapper;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -12,8 +14,9 @@ builder.Services.AddCors(options =>
     });
 });
 
-var app = builder.Build();
+string connectionString = "Server=localhost;Port=3306;Database=semicapstone;User Id=jijeong;Password=4321;";
 
+var app = builder.Build();
 app.UseCors("AllowReact");
 
 app.MapPost("/api/login", (LoginRequest request) =>
@@ -26,76 +29,148 @@ app.MapPost("/api/login", (LoginRequest request) =>
     return Results.BadRequest(new { message = "아이디 또는 비밀번호가 틀렸습니다." });
 });
 
-var chartFieldLabels = new[]
-{
-    "device_id",
-    "datetime",
-    "state",
-    "CO2",
-    "temperature",
-    "humidity",
-    "pm1_0",
-    "pm2_5",
-    "pm10",
-    "voc",
-    "fan_speed",
-    "fan_voltage",
-    "fan_current_mA"
-};
-
-var chartFieldUnits = new
-{
-    device_id = "",
-    datetime = "",
-    state = "",
-    CO2 = "ppm",
-    temperature = "C",
-    humidity = "%",
-    pm1_0 = "ug/m3",
-    pm2_5 = "ug/m3",
-    pm10 = "ug/m3",
-    voc = "level",
-    fan_speed = "%",
-    fan_voltage = "V",
-    fan_current_mA = "mA",
-};
-
-var chartValues = new
-{
-    device_id = "null",
-    datetime = "null",
-    state = "NORMAL",
-    data = new {
-        CO2 = 709,
-        temperature = 21.2,
-        humidity = 60.5,
-        pm1_0 = 27,
-        pm2_5 = 27,
-        pm10 = 28,
-        voc = 0,
-        fan_speed = 40,
-        fan_voltage = 5.028,
-        fan_current_mA = 41.6,
-    },
-};
 
 
-app.MapGet("/api/dashboard",
-() => {
-    return Results.Ok(new {
-        chartFieldLabels = chartFieldLabels,
-        chartFieldUnits = chartFieldUnits,
-        chartValues = chartValues
-        }
-    );
+app.MapGet("/api/dashboard", async (string? device_id) => {
+
+    string targetDevice = device_id ?? "chamber_1";
+
+    using IDbConnection db = new MySqlConnection(connectionString);
+
+    string query = @"
+        SELECT 
+            device_id, sequence, state, co2, temperature, humidity, 
+            pm1_0, pm2_5, pm10, voc, fan_speed, fan_voltage, 
+            fan_current_mA, fan_power_W, measured_at, received_at
+        FROM sensor_readings
+        ORDER BY id DESC
+        LIMIT 1";
+
+    var reading = await db.QueryFirstOrDefaultAsync<SensorReading>(query);
+
+    if (reading == null)
+    {
+        return Results.NotFound(new { message = $"장치({targetDevice})의 최신 데이터를 찾을 수 없습니다." });
+    }
+
+    var responseValues = new
+    {
+        device_id = reading.device_id,
+        sequence = reading.sequence,
+        state = reading.state,
+        co2 = reading.co2,
+        temperature = reading.temperature,
+        humidity = reading.humidity,
+        pm1_0 = reading.pm1_0,
+        pm2_5 = reading.pm2_5,
+        pm10 = reading.pm10,
+        voc = reading.voc,
+        fan_speed = reading.fan_speed,
+        fan_voltage = reading.fan_voltage,
+        fan_current_mA = reading.fan_current_mA,
+        fan_power_W = reading.fan_power_W,
+        measured_at = reading.measured_at.ToString("yyyy-MM-ddTHH:mm:ss.fffZ"),
+        received_at = reading.received_at.ToString("yyyy-MM-ddTHH:mm:ss.fffZ")
+    };
+
+    return Results.Ok(responseValues);
 });
 
-app.MapGet("/api/test", () =>
-{
-    return Results.Ok(new {
-        chartLabels = new[] { "1월", "2월", "3월", "4월", "5월", "6월" },
-        chartValues = new[] { 450, 290, 520, 110, 340, 620 }
+app.MapGet("/api/dashboard/history", async (string? device_id, string? range) => {
+
+    string targetDevice = device_id ?? "chamber_1";
+    string targetRange = range ?? "1m";
+
+    int seconds = targetRange switch
+    {
+        "1m" => 60,
+        "10m" => 600,
+        "1h" => 3600,
+        _ => 60
+    };
+
+    using IDbConnection db = new MySqlConnection(connectionString);
+
+    string query = @"
+        SELECT
+            device_id,
+            sequence,
+            state,
+            co2,
+            pm2_5,
+            fan_speed,
+            measured_at,
+            received_at
+        FROM sensor_readings
+        WHERE device_id = @device_id
+          AND measured_at >= DATE_SUB(UTC_TIMESTAMP(), INTERVAL @seconds SECOND)
+        ORDER BY measured_at ASC";
+
+    var data = await db.QueryAsync<HistoryReading>(
+        query,
+        new
+        {
+            device_id = targetDevice,
+            seconds
+        });
+    return Results.Ok(new
+    {
+        device_id = targetDevice,
+        range = targetRange,
+        total_points = data.Count(),
+        resolution_seconds = 1,
+        data
     });
+});
+
+
+app.MapPost("/api/sensor", async (SensorReading reading) =>
+{
+    using IDbConnection db = new MySqlConnection(connectionString);
+
+    string query = @"
+        INSERT INTO sensor_readings
+        (
+            device_id,
+            sequence,
+            state,
+            co2,
+            temperature,
+            humidity,
+            pm1_0,
+            pm2_5,
+            pm10,
+            voc,
+            fan_speed,
+            fan_voltage,
+            fan_current_mA,
+            fan_power_W,
+            measured_at,
+            received_at
+        )
+        VALUES
+        (
+            @device_id,
+            @sequence,
+            @state,
+            @co2,
+            @temperature,
+            @humidity,
+            @pm1_0,
+            @pm2_5,
+            @pm10,
+            @voc,
+            @fan_speed,
+            @fan_voltage,
+            @fan_current_mA,
+            @fan_power_W,
+            @measured_at,
+            UTC_TIMESTAMP()
+        )";
+
+    await db.ExecuteAsync(query, reading);
+
+    return Results.Ok();
 });
 
 app.Run();
@@ -104,4 +179,38 @@ public class LoginRequest
 {
     public string Id { get; set; } = string.Empty;
     public string Password { get; set; } = string.Empty;
+}
+
+public class SensorReading
+{
+    public string device_id { get; set; } = string.Empty;
+    public int sequence { get; set; }
+    public string state { get; set; } = "NORMAL";
+    public int co2 { get; set; }
+    public double temperature { get; set; }
+    public double humidity { get; set; }
+    public int pm1_0 { get; set; }
+    public int pm2_5 { get; set; }
+    public int pm10 { get; set; }
+    public int voc { get; set; }
+    public int fan_speed { get; set; }
+    public double fan_voltage { get; set; }
+    public double fan_current_mA { get; set; }
+    public double fan_power_W { get; set; }
+    public DateTime measured_at { get; set; }
+    public DateTime received_at { get; set; }
+}
+
+public class HistoryReading
+{
+    public string device_id { get; set; } = string.Empty;
+    public int sequence { get; set; }
+    public string state { get; set; } = "NORMAL";
+
+    public int co2 { get; set; }
+    public int pm2_5 { get; set; }
+    public int fan_speed { get; set; }
+
+    public DateTime measured_at { get; set; }
+    public DateTime received_at { get; set; }
 }

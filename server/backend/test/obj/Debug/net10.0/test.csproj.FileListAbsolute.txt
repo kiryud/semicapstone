@@ -27,3 +27,7 @@
 /Users/jeongjinseok/uni_DL/semicapstone/server/backend/test/obj/Debug/net10.0/test.pdb
 /Users/jeongjinseok/uni_DL/semicapstone/server/backend/test/obj/Debug/net10.0/test.genruntimeconfig.cache
 /Users/jeongjinseok/uni_DL/semicapstone/server/backend/test/obj/Debug/net10.0/ref/test.dll
+/Users/jeongjinseok/uni_DL/semicapstone/server/backend/test/bin/Debug/net10.0/Dapper.dll
+/Users/jeongjinseok/uni_DL/semicapstone/server/backend/test/bin/Debug/net10.0/MySqlConnector.dll
+/Users/jeongjinseok/uni_DL/semicapstone/server/backend/test/obj/Debug/net10.0/test.csproj.AssemblyReference.cache
+/Users/jeongjinseok/uni_DL/semicapstone/server/backend/test/obj/Debug/net10.0/test.csproj.Up2Date
