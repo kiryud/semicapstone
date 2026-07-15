@@ -8,7 +8,7 @@ export const apiDashboardProvider = {
   mode: "api",
   scenario: null,
   capabilities: {
-    history: false,
+    history: true,
     summary: false,
     events: false,
     alerts: false,
