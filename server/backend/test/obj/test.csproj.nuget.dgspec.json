@@ -1,20 +1,20 @@
 {
   "format": 1,
   "restore": {
-    "/Users/jeongjinseok/uni_DL/semicapstone/server/backend/test/test.csproj": {}
+    "/Users/jw.jin/projects/personal/semicapstone/server/backend/test/test.csproj": {}
   },
   "projects": {
-    "/Users/jeongjinseok/uni_DL/semicapstone/server/backend/test/test.csproj": {
+    "/Users/jw.jin/projects/personal/semicapstone/server/backend/test/test.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "/Users/jeongjinseok/uni_DL/semicapstone/server/backend/test/test.csproj",
+        "projectUniqueName": "/Users/jw.jin/projects/personal/semicapstone/server/backend/test/test.csproj",
         "projectName": "test",
-        "projectPath": "/Users/jeongjinseok/uni_DL/semicapstone/server/backend/test/test.csproj",
-        "packagesPath": "/Users/jeongjinseok/.nuget/packages/",
-        "outputPath": "/Users/jeongjinseok/uni_DL/semicapstone/server/backend/test/obj/",
+        "projectPath": "/Users/jw.jin/projects/personal/semicapstone/server/backend/test/test.csproj",
+        "packagesPath": "/Users/jw.jin/.nuget/packages/",
+        "outputPath": "/Users/jw.jin/projects/personal/semicapstone/server/backend/test/obj/",
         "projectStyle": "PackageReference",
         "configFilePaths": [
-          "/Users/jeongjinseok/.nuget/NuGet/NuGet.Config"
+          "/Users/jw.jin/.nuget/NuGet/NuGet.Config"
         ],
         "originalTargetFrameworks": [
           "net10.0"
@@ -74,7 +74,7 @@
               "privateAssets": "all"
             }
           },
-          "runtimeIdentifierGraphPath": "/usr/local/share/dotnet/sdk/10.0.301/PortableRuntimeIdentifierGraph.json",
+          "runtimeIdentifierGraphPath": "/usr/local/share/dotnet/sdk/10.0.300/PortableRuntimeIdentifierGraph.json",
           "packagesToPrune": {
             "Microsoft.AspNetCore": "(,10.0.32767]",
             "Microsoft.AspNetCore.Antiforgery": "(,10.0.32767]",

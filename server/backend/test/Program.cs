@@ -3,6 +3,7 @@ using MySqlConnector;
 using Dapper;
 
 var builder = WebApplication.CreateBuilder(args);
+LoadDotEnv(builder.Configuration, builder.Environment.ContentRootPath);
 
 builder.Services.AddCors(options =>
 {
@@ -14,7 +15,16 @@ builder.Services.AddCors(options =>
     });
 });
 
-string connectionString = "Server=localhost;Port=3306;Database=semicapstone;User Id=jijeong;Password=4321;";
+var connectionString = new MySqlConnectionStringBuilder
+{
+    Server = builder.Configuration["DB_HOST"] ?? "localhost",
+    Port = uint.TryParse(builder.Configuration["DB_PORT"], out var dbPort)
+        ? dbPort
+        : 3306,
+    Database = GetRequiredSetting(builder.Configuration, "DB_DATABASE"),
+    UserID = GetRequiredSetting(builder.Configuration, "DB_USER"),
+    Password = GetRequiredSetting(builder.Configuration, "DB_PASSWORD")
+}.ConnectionString;
 
 var app = builder.Build();
 app.UseCors("AllowReact");
@@ -43,10 +53,13 @@ app.MapGet("/api/dashboard", async (string? device_id) => {
             pm1_0, pm2_5, pm10, voc, fan_speed, fan_voltage, 
             fan_current_mA, fan_power_W, measured_at, received_at
         FROM sensor_readings
+        WHERE device_id = @device_id
         ORDER BY id DESC
         LIMIT 1";
 
-    var reading = await db.QueryFirstOrDefaultAsync<SensorReading>(query);
+    var reading = await db.QueryFirstOrDefaultAsync<SensorReading>(
+        query,
+        new { device_id = targetDevice });
 
     if (reading == null)
     {
@@ -99,6 +112,7 @@ app.MapGet("/api/dashboard/history", async (string? device_id, string? range) =>
             co2,
             pm2_5,
             fan_speed,
+            fan_current_mA,
             measured_at,
             received_at
         FROM sensor_readings
@@ -175,6 +189,51 @@ app.MapPost("/api/sensor", async (SensorReading reading) =>
 
 app.Run();
 
+static string GetRequiredSetting(IConfiguration configuration, string key)
+{
+    return configuration[key]
+        ?? throw new InvalidOperationException($"필수 환경 변수 {key}가 설정되지 않았습니다.");
+}
+
+static void LoadDotEnv(IConfiguration configuration, string startPath)
+{
+    var directory = new DirectoryInfo(startPath);
+
+    while (directory is not null)
+    {
+        var path = Path.Combine(directory.FullName, ".env");
+        if (File.Exists(path))
+        {
+            foreach (var rawLine in File.ReadLines(path))
+            {
+                var line = rawLine.Trim();
+                if (line.Length == 0 || line.StartsWith('#')) continue;
+
+                var separatorIndex = line.IndexOf('=');
+                if (separatorIndex <= 0) continue;
+
+                var key = line[..separatorIndex].Trim();
+                var value = line[(separatorIndex + 1)..].Trim();
+                if (value.Length >= 2 &&
+                    ((value[0] == '"' && value[^1] == '"') ||
+                     (value[0] == '\'' && value[^1] == '\'')))
+                {
+                    value = value[1..^1];
+                }
+
+                if (configuration[key] is null)
+                {
+                    configuration[key] = value;
+                }
+            }
+
+            return;
+        }
+
+        directory = directory.Parent;
+    }
+}
+
 public class LoginRequest
 {
     public string Id { get; set; } = string.Empty;
@@ -210,6 +269,7 @@ public class HistoryReading
     public int co2 { get; set; }
     public int pm2_5 { get; set; }
     public int fan_speed { get; set; }
+    public double fan_current_mA { get; set; }
 
     public DateTime measured_at { get; set; }
     public DateTime received_at { get; set; }

@@ -3,8 +3,6 @@ import { formatUpdatedAt } from "../../utils/dashboardFormat.js";
 export default function DashboardHeader({
   deviceId,
   receivedAt,
-  useMock,
-  mockScenario,
   onLogout,
 }) {
   return (
@@ -23,7 +21,7 @@ export default function DashboardHeader({
         </div>
         <div className="flex items-center gap-2 sm:gap-3">
           <span className="hidden rounded-full bg-brand-soft px-3 py-1.5 text-xs font-semibold text-brand sm:inline-flex">
-            {useMock ? `MOCK · ${mockScenario?.toUpperCase()}` : "LIVE API"}
+            LIVE API
           </span>
           <button
             type="button"

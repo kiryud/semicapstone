@@ -11,10 +11,6 @@ import PrimaryMetricCard from "../components/dashboard/PrimaryMetricCard.jsx";
 import SecondaryMetrics from "../components/dashboard/SecondaryMetrics.jsx";
 import VentilationEffectPanel from "../components/dashboard/VentilationEffectPanel.jsx";
 import ChartJsTrendSection from "../components/dashboard/ChartJsTrendSection.jsx";
-import {
-  DASHBOARD_SCENARIO,
-  USE_MOCK,
-} from "../hooks/useDashboardData.js";
 import { useDashboardViewModel } from "../hooks/useDashboardViewModel.js";
 import { DEFAULT_DEVICE_ID } from "../models/dashboardModels.js";
 import { removeAccessToken } from "../utils/storage.js";
@@ -54,8 +50,6 @@ export default function DashboardPage() {
       <DashboardHeader
         deviceId={data.device_id}
         receivedAt={data.received_at}
-        useMock={USE_MOCK}
-        mockScenario={DASHBOARD_SCENARIO}
         onLogout={handleLogout}
       />
 
